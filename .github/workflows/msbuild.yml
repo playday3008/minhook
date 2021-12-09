@@ -1,0 +1,47 @@
+name: MSBuild
+
+on: [push, pull_request]
+
+jobs:
+  vs-build:
+    name: Build (Visual Studio)
+    runs-on: windows-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        vsv:
+          - "VC9" # Unsupported
+          - "VC10" # No toolset
+          - "VC11" # No toolset
+          - "VC12" # No toolset
+          - "VC14"
+          - "VC15"
+          - "VC16"
+        config:
+          - "Release"
+          - "Debug"
+        platform:
+          - "Win32"
+          - "x64"
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        vs-version: '[8.0,17.1]'
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: msbuild "build\${{ matrix.vsv }}\MinHook${{ matrix.vsv }}.sln" /m /p:Platform=${{ matrix.platform }} /p:Configuration=${{ matrix.config }}
+      
+      # Upload artifact
+    - name: Upload
+      uses: actions/upload-artifact@v2.3.0
+      with:
+        name: MinHook  (${{ matrix.vsv }} ${{ matrix.config }} ${{ matrix.platform }})
+        path: build/${{ matrix.vsv }}/*
